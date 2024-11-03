@@ -1,36 +1,26 @@
-print("Iniciando programa...")
+# Imports básicos
 import sys
-print("sys importado")
 import datetime
-print("datetime importado")
-import os.path
-print("os.path importado")
+import os
 import pickle
-print("pickle importado")
 
-print("1. Imports básicos carregados")
+print("Iniciando programa...")
 
 try:
     from PyQt5.QtWidgets import *
     from PyQt5.QtCore import *
     from PyQt5.QtGui import *
-    print("2. Imports PyQt5 carregados")
 except Exception as e:
     print(f"Erro ao carregar PyQt5: {e}")
     sys.exit(1)
 
 try:
     import matplotlib
-    print("3a. Matplotlib importado")
-    matplotlib.use('Qt5Agg', force=True)  # Força o uso do Qt5Agg
-    print("3b. Backend Qt5Agg configurado")
+    matplotlib.use('Qt5Agg', force=True)
     from matplotlib.figure import Figure
-    print("3c. Figure importado")
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-    print("3d. FigureCanvas importado")
     import matplotlib.pyplot as plt
-    plt.ioff()  # Desativa o modo interativo
-    print("3e. pyplot importado")
+    plt.ioff()
 except Exception as e:
     print(f"Erro ao carregar matplotlib: {e}")
     matplotlib_available = False
@@ -40,19 +30,16 @@ else:
 try:
     import pandas as pd
     import numpy as np
-    print("4. Pandas e Numpy importados")
 except Exception as e:
     print(f"Erro ao carregar pandas/numpy: {e}")
 
 try:
-    from database import EstudosDB  # Certifique-se que database.py está no mesmo diretório
-    print("5. Database importado")
+    from database import EstudosDB
 except Exception as e:
     print(f"Erro ao carregar database: {e}")
 
 try:
     from qt_material import apply_stylesheet, list_themes
-    print("6. Qt Material importado")
 except Exception as e:
     print(f"Erro ao carregar qt_material: {e}")
 
@@ -1081,6 +1068,7 @@ class AgendaApp(QMainWindow):
                 break
 
     def show_gerenciar_materias(self):
+        """Abre o diálogo de gerenciamento de matérias"""
         dialog = GerenciarMateriasDialog(self.db, self)
         dialog.exec_()
         # Atualiza o combobox de matérias após fechar o diálogo
@@ -1257,9 +1245,7 @@ class AgendaApp(QMainWindow):
         """Inicializa o banco de dados"""
         try:
             self.db = EstudosDB()
-            print("Banco de dados inicializado com sucesso")
         except Exception as e:
-            print(f"Erro ao inicializar banco de dados: {e}")
             QMessageBox.critical(self, "Erro", 
                 f"Erro ao inicializar banco de dados: {str(e)}")
             sys.exit(1)
@@ -1268,9 +1254,7 @@ class AgendaApp(QMainWindow):
         """Inicializa o serviço do Google Calendar"""
         try:
             self.service = get_google_calendar_service()
-            print("Serviço do Google Calendar inicializado com sucesso")
         except Exception as e:
-            print(f"Erro ao conectar com Google Calendar: {e}")
             QMessageBox.warning(self, "Aviso", 
                 "Não foi possível conectar ao Google Calendar.\nAlgumas funcionalidades podem estar indisponíveis.")
 
@@ -1500,25 +1484,17 @@ class GerenciarMateriasDialog(QDialog):
             """)
 
 def main():
-    print("Função main iniciada")
     app = QApplication(sys.argv)
-    print("QApplication criada")
     
     # Aplica o tema material
     apply_stylesheet(app, theme='dark_teal.xml')
-    print("Tema aplicado")
     
     # Aplica estilos personalizados
     app.setStyleSheet(CUSTOM_STYLE)
-    print("Estilo personalizado aplicado")
     
     ex = AgendaApp()
-    print("AgendaApp criada")
     ex.show()
-    print("Janela exibida")
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    print("Iniciando main")
-    main() 
-    main() 
+    main()
