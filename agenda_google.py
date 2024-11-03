@@ -1,21 +1,67 @@
+print("Iniciando programa...")
 import sys
+print("sys importado")
 import datetime
+print("datetime importado")
 import os.path
+print("os.path importado")
 import pickle
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+print("pickle importado")
+
+print("1. Imports básicos carregados")
+
+try:
+    from PyQt5.QtWidgets import *
+    from PyQt5.QtCore import *
+    from PyQt5.QtGui import *
+    print("2. Imports PyQt5 carregados")
+except Exception as e:
+    print(f"Erro ao carregar PyQt5: {e}")
+    sys.exit(1)
+
+try:
+    import matplotlib
+    print("3a. Matplotlib importado")
+    matplotlib.use('Qt5Agg')  # Mudando para Qt5Agg em vez de Agg
+    print("3b. Backend Qt5Agg configurado")
+    from matplotlib.figure import Figure
+    print("3c. Figure importado")
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    print("3d. FigureCanvas importado")
+    import matplotlib.pyplot as plt
+    print("3e. pyplot importado")
+except Exception as e:
+    print(f"Erro ao carregar matplotlib: {e}")
+    matplotlib_available = False
+else:
+    matplotlib_available = True
+
+try:
+    import pandas as pd
+    import numpy as np
+    print("4. Pandas e Numpy importados")
+except Exception as e:
+    print(f"Erro ao carregar pandas/numpy: {e}")
+
+try:
+    from database import EstudosDB  # Certifique-se que database.py está no mesmo diretório
+    print("5. Database importado")
+except Exception as e:
+    print(f"Erro ao carregar database: {e}")
+
+try:
+    from qt_material import apply_stylesheet, list_themes
+    print("6. Qt Material importado")
+except Exception as e:
+    print(f"Erro ao carregar qt_material: {e}")
+
+# Imports do Google Calendar
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-from database import EstudosDB  # Certifique-se de que este arquivo existe
-from qt_material import apply_stylesheet, list_themes
+
+print("7. Imports do Google Calendar carregados")
 
 # Configurações
 SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -633,7 +679,9 @@ class AgendaApp(QMainWindow):
         # Inicializa o banco de dados
         try:
             self.db = EstudosDB()
+            print("Banco de dados inicializado com sucesso")
         except Exception as e:
+            print(f"Erro ao inicializar banco de dados: {e}")
             QMessageBox.critical(self, "Erro", 
                 f"Erro ao inicializar banco de dados: {str(e)}")
             sys.exit(1)
@@ -641,9 +689,11 @@ class AgendaApp(QMainWindow):
         # Inicializa o serviço do Google Calendar
         try:
             self.service = get_google_calendar_service()
+            print("Serviço do Google Calendar inicializado com sucesso")
         except Exception as e:
-            QMessageBox.critical(self, "Erro", 
-                f"Erro ao conectar com Google Calendar: {str(e)}")
+            print(f"Erro ao conectar com Google Calendar: {e}")
+            QMessageBox.warning(self, "Aviso", 
+                "Não foi possível conectar ao Google Calendar.\nAlgumas funcionalidades podem estar indisponíveis.")
             sys.exit(1)
         
         self.setup_ui()
@@ -1249,19 +1299,24 @@ class GerenciarMateriasDialog(QDialog):
             """)
 
 def main():
-    import sys
-    
+    print("Função main iniciada")
     app = QApplication(sys.argv)
+    print("QApplication criada")
     
     # Aplica o tema material
     apply_stylesheet(app, theme='dark_teal.xml')
+    print("Tema aplicado")
     
     # Aplica estilos personalizados
     app.setStyleSheet(CUSTOM_STYLE)
+    print("Estilo personalizado aplicado")
     
     ex = AgendaApp()
+    print("AgendaApp criada")
     ex.show()
+    print("Janela exibida")
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
+    print("Iniciando main")
     main() 
