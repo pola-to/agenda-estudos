@@ -22,13 +22,14 @@ except Exception as e:
 try:
     import matplotlib
     print("3a. Matplotlib importado")
-    matplotlib.use('Qt5Agg')  # Mudando para Qt5Agg em vez de Agg
+    matplotlib.use('Qt5Agg', force=True)  # Força o uso do Qt5Agg
     print("3b. Backend Qt5Agg configurado")
     from matplotlib.figure import Figure
     print("3c. Figure importado")
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
     print("3d. FigureCanvas importado")
     import matplotlib.pyplot as plt
+    plt.ioff()  # Desativa o modo interativo
     print("3e. pyplot importado")
 except Exception as e:
     print(f"Erro ao carregar matplotlib: {e}")
@@ -384,6 +385,184 @@ QGroupBox::title {
 }
 """
 
+CALENDAR_STYLE = """
+QCalendarWidget {
+    background-color: #1e1e1e;
+    color: white;
+    min-width: 400px;
+    min-height: 300px;
+}
+
+/* Navegação do mês/ano */
+QCalendarWidget QWidget#qt_calendar_navigationbar {
+    background-color: #1e1e1e;
+    padding: 4px;
+}
+
+QCalendarWidget QToolButton {
+    color: white;
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 6px;
+    margin: 2px;
+    font-weight: bold;
+}
+
+QCalendarWidget QToolButton:hover {
+    background-color: #404040;
+}
+
+/* Cabeçalho dos dias da semana */
+QCalendarWidget QWidget#qt_calendar_calendarview { 
+    background-color: #1e1e1e;
+    selection-background-color: #0078d4;
+    selection-color: white;
+    alternate-background-color: #2d2d2d;
+}
+
+QCalendarWidget QWidget { 
+    alternate-background-color: #2d2d2d;
+}
+
+QCalendarWidget QAbstractItemView:enabled {
+    color: white;  /* Cor dos números */
+    background-color: #1e1e1e;  /* Fundo das células */
+    selection-background-color: #0078d4;  /* Fundo da seleção */
+    selection-color: white;  /* Cor do texto selecionado */
+}
+
+QCalendarWidget QAbstractItemView:disabled {
+    color: #666666;  /* Cor dos dias de outros meses */
+}
+
+/* Dias do mês atual */
+QCalendarWidget QAbstractItemView:!disabled {
+    color: white;
+}
+
+/* Dias do fim de semana */
+QCalendarWidget QAbstractItemView:enabled:weekend {
+    color: #ff4444;
+}
+
+/* Dia atual */
+QCalendarWidget QAbstractItemView:enabled:today {
+    background-color: #666666;
+    color: white;
+    font-weight: bold;
+}
+
+/* Cabeçalho dos dias da semana */
+QCalendarWidget QHeaderView {
+    background-color: #1e1e1e;
+}
+
+QCalendarWidget QHeaderView::section {
+    color: white;
+    padding: 6px;
+    font-weight: bold;
+    background-color: #1e1e1e;
+    border: none;
+}
+
+/* Grid do calendário */
+QCalendarWidget QTableView {
+    outline: none;
+    selection-background-color: #0078d4;
+    selection-color: white;
+}
+"""
+
+CALENDAR_STYLE_LIGHT = """
+QCalendarWidget {
+    background-color: white;
+    color: #333333;
+    min-width: 400px;
+    min-height: 300px;
+}
+
+/* Navegação do mês/ano */
+QCalendarWidget QWidget#qt_calendar_navigationbar {
+    background-color: white;
+    padding: 4px;
+}
+
+QCalendarWidget QToolButton {
+    color: #333333;
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 6px;
+    margin: 2px;
+    font-weight: bold;
+}
+
+QCalendarWidget QToolButton:hover {
+    background-color: #e0e0e0;
+}
+
+/* Cabeçalho dos dias da semana */
+QCalendarWidget QWidget#qt_calendar_calendarview { 
+    background-color: white;
+    selection-background-color: #0078d4;
+    selection-color: white;
+    alternate-background-color: #f5f5f5;
+}
+
+QCalendarWidget QWidget { 
+    alternate-background-color: #f5f5f5;
+}
+
+QCalendarWidget QAbstractItemView:enabled {
+    color: #333333;
+    background-color: white;
+    selection-background-color: #0078d4;
+    selection-color: white;
+}
+
+QCalendarWidget QAbstractItemView:disabled {
+    color: #cccccc;
+}
+
+/* Dias do mês atual */
+QCalendarWidget QAbstractItemView:!disabled {
+    color: #333333;
+}
+
+/* Dias do fim de semana */
+QCalendarWidget QAbstractItemView:enabled:weekend {
+    color: #ff4444;
+}
+
+/* Dia atual */
+QCalendarWidget QAbstractItemView:enabled:today {
+    background-color: #e0e0e0;
+    color: #333333;
+    font-weight: bold;
+}
+
+/* Cabeçalho dos dias da semana */
+QCalendarWidget QHeaderView {
+    background-color: white;
+}
+
+QCalendarWidget QHeaderView::section {
+    color: #333333;
+    padding: 6px;
+    font-weight: bold;
+    background-color: white;
+    border: none;
+}
+
+/* Grid do calendário */
+QCalendarWidget QTableView {
+    outline: none;
+    selection-background-color: #0078d4;
+    selection-color: white;
+}
+"""
+
 def get_google_calendar_service():
     """Função para obter o serviço do Google Calendar"""
     creds = None
@@ -412,9 +591,9 @@ class AnalyticsTab(QWidget):
     def __init__(self, db):
         super().__init__()
         self.db = db
-        self.is_dark_mode = True  # Adiciona o atributo is_dark_mode
+        self.is_dark_mode = False  # Inicializa com modo claro
         self.setup_ui()
-        self.configure_dark_plot_style()
+        self.update_chart()  # Adiciona esta linha para atualizar o gráfico na inicialização
 
     def configure_dark_plot_style(self):
         """Configura o estilo dark para os gráficos"""
@@ -497,6 +676,10 @@ class AnalyticsTab(QWidget):
         self.stats_text.setReadOnly(True)
         self.stats_text.setMaximumHeight(100)
         layout.addWidget(self.stats_text)
+
+        # Após configurar todos os widgets
+        self.configure_light_plot_style()  # Configura o estilo inicial
+        self.update_chart()  # Garante que o gráfico seja desenhado
 
     def set_dark_mode(self, is_dark):
         """Atualiza o modo escuro/claro"""
@@ -669,77 +852,33 @@ class AnalyticsTab(QWidget):
 class AgendaApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        # Inicializa com modo escuro desligado
         self.is_dark_mode = False
-        
-        # Configura o estilo inicial da janela
-        self.setup_window_style()
         self.setMinimumSize(1000, 700)
         
-        # Inicializa o banco de dados
-        try:
-            self.db = EstudosDB()
-            print("Banco de dados inicializado com sucesso")
-        except Exception as e:
-            print(f"Erro ao inicializar banco de dados: {e}")
-            QMessageBox.critical(self, "Erro", 
-                f"Erro ao inicializar banco de dados: {str(e)}")
-            sys.exit(1)
+        # Inicializa componentes importantes primeiro
+        self.init_database()
+        self.init_google_calendar()
         
-        # Inicializa o serviço do Google Calendar
-        try:
-            self.service = get_google_calendar_service()
-            print("Serviço do Google Calendar inicializado com sucesso")
-        except Exception as e:
-            print(f"Erro ao conectar com Google Calendar: {e}")
-            QMessageBox.warning(self, "Aviso", 
-                "Não foi possível conectar ao Google Calendar.\nAlgumas funcionalidades podem estar indisponíveis.")
-            sys.exit(1)
+        # Cria os widgets antes de configurar a UI
+        self.create_widgets()
         
+        # Configura a interface
         self.setup_ui()
-        self.apply_theme()  # Aplica o tema inicial
-        self.load_eventos()
-
-    def setup_window_style(self):
-        """Configura o estilo da janela"""
-        # Título da janela com emoji como ícone
-        self.setWindowTitle("📅 Agenda de Estudos")
         
-        # Estilo da barra de título
-        if self.is_dark_mode:
-            self.setStyleSheet("""
-                QMainWindow {
-                    background-color: #1e1e1e;
-                }
-                QMenuBar {
-                    background-color: #2d2d2d;
-                    color: white;
-                }
-                QMenuBar::item:selected {
-                    background-color: #3d3d3d;
-                }
-                QStatusBar {
-                    background-color: #2d2d2d;
-                    color: white;
-                }
-            """)
-        else:
-            self.setStyleSheet("""
-                QMainWindow {
-                    background-color: #ffffff;
-                }
-                QMenuBar {
-                    background-color: #f0f0f0;
-                    color: #333333;
-                }
-                QMenuBar::item:selected {
-                    background-color: #e0e0e0;
-                }
-                QStatusBar {
-                    background-color: #f0f0f0;
-                    color: #333333;
-                }
-            """)
+        # Aplica estilos e temas
+        self.setup_window_style()
+        QApplication.processEvents()
+        self.apply_theme()
+        
+        # Carrega os eventos por último
+        QTimer.singleShot(100, self.load_eventos)
+
+    def create_widgets(self):
+        """Cria os widgets principais"""
+        self.lista_eventos = QListWidget()
+        self.calendar_widget = QCalendarWidget()
+        self.theme_button = QPushButton("🌙 Modo Escuro")
+        self.theme_button.clicked.connect(self.toggle_theme)
 
     def setup_ui(self):
         # Widget principal
@@ -747,9 +886,7 @@ class AgendaApp(QMainWindow):
         main_layout = QVBoxLayout(main_widget)
         main_layout.setContentsMargins(20, 20, 20, 20)
         
-        # Adiciona botão de alternar tema
-        self.theme_button = QPushButton("☀️ Modo Claro" if self.is_dark_mode else "🌙 Modo Escuro")
-        self.theme_button.clicked.connect(self.toggle_theme)
+        # Adiciona botão de tema
         main_layout.addWidget(self.theme_button)
         
         # Criar TabWidget
@@ -766,59 +903,30 @@ class AgendaApp(QMainWindow):
         calendar_layout.addWidget(left_panel)
         calendar_layout.addWidget(right_panel)
         
+        self.tab_widget.addTab(calendar_tab, "📅 Calendário")
+        
         # Aba de análises
         analytics_tab = AnalyticsTab(self.db)
-        
-        # Adicionar abas
-        self.tab_widget.addTab(calendar_tab, "📅 Calendário")
+        analytics_tab.set_dark_mode(self.is_dark_mode)
         self.tab_widget.addTab(analytics_tab, "📊 Análises")
         
         main_layout.addWidget(self.tab_widget)
         self.setCentralWidget(main_widget)
-
-        # Estilo especial para o botão de tema
-        self.theme_button.setStyleSheet("""
-            QPushButton {
-                background-color: #333333;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #404040;
-            }
-        """ if self.is_dark_mode else """
-            QPushButton {
-                background-color: #e0e0e0;
-                color: #333333;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #d0d0d0;
-            }
-        """)
 
     def create_left_panel(self):
         panel = QWidget()
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(15, 15, 15, 15)
         
-        # Calendário
-        self.calendar_widget = QCalendarWidget()
+        # Adiciona o calendário pré-criado
         self.calendar_widget.clicked.connect(self.data_selecionada)
         layout.addWidget(self.calendar_widget)
-
+        
         # Grupo de Eventos
         eventos_group = QGroupBox("📅 Eventos do Dia")
         eventos_layout = QVBoxLayout(eventos_group)
         
-        # Lista de eventos
-        self.lista_eventos = QListWidget()
+        # Adiciona a lista de eventos pré-criada
         eventos_layout.addWidget(self.lista_eventos)
         
         # Botão de excluir
@@ -836,101 +944,9 @@ class AgendaApp(QMainWindow):
         layout.addWidget(eventos_group)
         return panel
 
-    def create_right_panel(self):
-        panel = QWidget()
-        layout = QVBoxLayout(panel)
-        layout.setContentsMargins(15, 15, 15, 15)
-        
-        # Formulário
-        form_group = QGroupBox("📝 Novo Evento")
-        form_layout = QFormLayout(form_group)
-        
-        self.titulo = QLineEdit()
-        self.materia = QComboBox()
-        self.materia.setEditable(True)
-        
-        self.data = QDateEdit()
-        self.data.setDate(QDate.currentDate())
-        self.data.setCalendarPopup(True)
-        
-        self.hora_inicio = QTimeEdit()
-        self.hora_fim = QTimeEdit()
-        self.hora_fim.setTime(QTime.currentTime().addSecs(3600))
-        
-        self.descricao = QTextEdit()
-        self.descricao.setMaximumHeight(100)
-        
-        # Adiciona botão para gerenciar matérias
-        btn_gerenciar = QPushButton("📚 Gerenciar Matérias")
-        btn_gerenciar.clicked.connect(self.show_gerenciar_materias)
-        form_layout.addRow("", btn_gerenciar)
-        
-        form_layout.addRow("Título:", self.titulo)
-        form_layout.addRow("Matéria:", self.materia)
-        form_layout.addRow("Data:", self.data)
-        form_layout.addRow("Início:", self.hora_inicio)
-        form_layout.addRow("Fim:", self.hora_fim)
-        form_layout.addRow("Descrição:", self.descricao)
-        
-        layout.addWidget(form_group)
-        
-        # Botões
-        btn_layout = QHBoxLayout()
-        btn_salvar = QPushButton("💾 Salvar")
-        btn_limpar = QPushButton("🧹 Limpar")
-        
-        btn_salvar.clicked.connect(self.adicionar_evento)
-        btn_limpar.clicked.connect(self.limpar_formulario)
-        
-        btn_layout.addWidget(btn_salvar)
-        btn_layout.addWidget(btn_limpar)
-        
-        layout.addLayout(btn_layout)
-        
-        return panel
-
-    def atualizar_botao_excluir(self):
-        """Habilita/desabilita o botão de excluir baseado na seleção"""
-        self.btn_excluir_evento.setEnabled(len(self.lista_eventos.selectedItems()) > 0)
-
-    def excluir_evento_selecionado(self):
-        """Exclui o evento selecionado na lista"""
-        item_selecionado = self.lista_eventos.currentItem()
-        if not item_selecionado:
-            return
-            
-        evento_texto = item_selecionado.text()
-        
-        # Confirmação
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Question)
-        msg.setText("Tem certeza que deseja excluir este evento?")
-        msg.setInformativeText(evento_texto)
-        msg.setWindowTitle("Confirmar Exclusão")
-        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg.setDefaultButton(QMessageBox.No)
-        
-        if msg.exec_() == QMessageBox.Yes:
-            try:
-                eventos = self.obter_eventos_do_dia()
-                for evento in eventos:
-                    if evento['summary'] in evento_texto:
-                        self.service.events().delete(
-                            calendarId='primary',
-                            eventId=evento['id']
-                        ).execute()
-                        
-                        self.lista_eventos.takeItem(self.lista_eventos.row(item_selecionado))
-                        QMessageBox.information(self, "Sucesso", "✅ Evento excluído com sucesso!")
-                        break
-                        
-            except Exception as e:
-                QMessageBox.critical(self, "Erro", f"❌ Erro ao excluir evento: {str(e)}")
-
     def load_eventos(self):
         """Carrega eventos do Google Calendar"""
         try:
-            # Usa datetime.UTC para timezone aware
             now = datetime.datetime.now(datetime.UTC).isoformat()
             events_result = self.service.events().list(
                 calendarId='primary',
@@ -941,13 +957,13 @@ class AgendaApp(QMainWindow):
             ).execute()
             events = events_result.get('items', [])
 
-            self.lista_eventos.clear()
-            for event in events:
-                start = event['start'].get('dateTime', event['start'].get('date'))
-                self.lista_eventos.addItem(f"{start}: {event['summary']}")
-
+            if hasattr(self, 'lista_eventos'):
+                self.lista_eventos.clear()
+                for event in events:
+                    start = event['start'].get('dateTime', event['start'].get('date'))
+                    self.lista_eventos.addItem(f"{start}: {event['summary']}")
         except Exception as e:
-            QMessageBox.warning(self, "Erro", f"Erro ao carregar eventos: {str(e)}")
+            print(f"Erro ao carregar eventos: {e}")
 
     def data_selecionada(self, date):
         self.data.setDate(date)
@@ -1005,101 +1021,6 @@ class AgendaApp(QMainWindow):
         analytics_tab = self.tab_widget.widget(1)  # Assume que Analytics é a segunda aba
         if isinstance(analytics_tab, AnalyticsTab):
             analytics_tab.set_dark_mode(self.is_dark_mode)
-
-    def apply_theme(self):
-        """Aplica o tema claro ou escuro"""
-        base_style = """
-            QMainWindow {
-                background-color: %(bg)s;
-            }
-            QWidget {
-                background-color: %(bg)s;
-                color: %(text)s;
-            }
-            QTabWidget::pane {
-                border: 1px solid %(border)s;
-                background-color: %(bg)s;
-            }
-            QTabBar::tab {
-                background-color: %(tab_bg)s;
-                color: %(text)s;
-                padding: 8px 20px;
-                border: 1px solid %(border)s;
-            }
-            QTabBar::tab:selected {
-                background-color: #0078d4;
-                color: white;
-            }
-            QLineEdit, QTextEdit, QComboBox, QTimeEdit, QDateEdit {
-                background-color: %(input_bg)s;
-                color: %(text)s;
-                border: 1px solid %(border)s;
-                padding: 5px;
-                border-radius: 4px;
-            }
-            QGroupBox {
-                border: 1px solid %(border)s;
-                margin-top: 10px;
-                padding-top: 10px;
-                color: %(text)s;
-            }
-        """
-
-        if self.is_dark_mode:
-            colors = {
-                'bg': '#1a1a1a',
-                'text': '#ffffff',
-                'border': '#404040',
-                'tab_bg': '#2d2d2d',
-                'input_bg': '#333333'
-            }
-            self.theme_button.setText("☀️ Modo Claro")
-        else:
-            colors = {
-                'bg': '#ffffff',
-                'text': '#333333',
-                'border': '#dddddd',
-                'tab_bg': '#f5f5f5',
-                'input_bg': '#ffffff'
-            }
-            self.theme_button.setText("🌙 Modo Escuro")
-
-        # Aplica o estilo base
-        self.setStyleSheet(base_style % colors)
-
-        # Estilo específico para o calendário
-        calendar_style = """
-            QCalendarWidget {
-                background-color: %(bg)s;
-            }
-            QCalendarWidget QWidget {
-                alternate-background-color: %(alt_bg)s;
-                background-color: %(bg)s;
-            }
-            QCalendarWidget QAbstractItemView:enabled {
-                color: %(text)s;
-                background-color: %(bg)s;
-                selection-background-color: #0078d4;
-                selection-color: white;
-            }
-            QCalendarWidget QWidget#qt_calendar_navigationbar {
-                background-color: %(nav_bg)s;
-            }
-            QCalendarWidget QToolButton {
-                color: %(text)s;
-                background-color: %(nav_bg)s;
-                border: none;
-                border-radius: 4px;
-                padding: 5px;
-            }
-        """ % {
-            'bg': colors['bg'],
-            'alt_bg': '#2d2d2d' if self.is_dark_mode else '#f5f5f5',
-            'text': colors['text'],
-            'nav_bg': '#2d2d2d' if self.is_dark_mode else '#f5f5f5'
-        }
-        
-        self.calendar_widget.setStyleSheet(calendar_style)
 
     def obter_eventos_do_dia(self):
         """Obtém eventos do dia selecionado"""
@@ -1165,6 +1086,286 @@ class AgendaApp(QMainWindow):
         # Atualiza o combobox de matérias após fechar o diálogo
         self.materia.clear()
         self.materia.addItems(self.db.get_materias())
+
+    def atualizar_botao_excluir(self):
+        """Habilita/desabilita o botão de excluir baseado na seleção"""
+        self.btn_excluir_evento.setEnabled(len(self.lista_eventos.selectedItems()) > 0)
+
+    def excluir_evento_selecionado(self):
+        """Exclui o evento selecionado na lista"""
+        item_selecionado = self.lista_eventos.currentItem()
+        if not item_selecionado:
+            return
+            
+        evento_texto = item_selecionado.text()
+        
+        # Confirmação
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Question)
+        msg.setText("Tem certeza que deseja excluir este evento?")
+        msg.setInformativeText(evento_texto)
+        msg.setWindowTitle("Confirmar Exclusão")
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.No)
+        
+        if msg.exec_() == QMessageBox.Yes:
+            try:
+                eventos = self.obter_eventos_do_dia()
+                for evento in eventos:
+                    if evento['summary'] in evento_texto:
+                        self.service.events().delete(
+                            calendarId='primary',
+                            eventId=evento['id']
+                        ).execute()
+                        
+                        self.lista_eventos.takeItem(self.lista_eventos.row(item_selecionado))
+                        QMessageBox.information(self, "Sucesso", "✅ Evento excluído com sucesso!")
+                        break
+                        
+            except Exception as e:
+                QMessageBox.critical(self, "Erro", f"❌ Erro ao excluir evento: {str(e)}")
+
+    def apply_theme(self):
+        """Aplica o tema claro ou escuro"""
+        if self.is_dark_mode:
+            # Tema Escuro
+            self.setStyleSheet("""
+                QMainWindow, QWidget {
+                    background-color: #1e1e1e;
+                    color: white;
+                }
+                QGroupBox {
+                    border: 1px solid #404040;
+                    margin-top: 1.5ex;
+                    padding: 10px;
+                    color: white;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 10px;
+                    padding: 0 3px;
+                    color: white;
+                }
+                QLineEdit, QTextEdit, QComboBox, QSpinBox, QDateEdit, QTimeEdit {
+                    background-color: #2d2d2d;
+                    color: white;
+                    border: 1px solid #404040;
+                    padding: 5px;
+                    border-radius: 3px;
+                }
+                QPushButton {
+                    background-color: #0078d4;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #1084d9;
+                }
+                QPushButton:disabled {
+                    background-color: #404040;
+                }
+                QListWidget {
+                    background-color: #2d2d2d;
+                    color: white;
+                    border: 1px solid #404040;
+                    border-radius: 4px;
+                }
+                QListWidget::item:selected {
+                    background-color: #0078d4;
+                    color: white;
+                }
+                QTabWidget::pane {
+                    border: 1px solid #404040;
+                }
+                QTabBar::tab {
+                    background-color: #2d2d2d;
+                    color: white;
+                    padding: 8px 16px;
+                    border: 1px solid #404040;
+                }
+                QTabBar::tab:selected {
+                    background-color: #0078d4;
+                }
+            """)
+            # Aplica estilo escuro ao calendário
+            self.calendar_widget.setStyleSheet(CALENDAR_STYLE)
+        else:
+            # Tema Claro
+            self.setStyleSheet("""
+                QMainWindow, QWidget {
+                    background-color: white;
+                    color: #333333;
+                }
+                QGroupBox {
+                    border: 1px solid #dddddd;
+                    margin-top: 1.5ex;
+                    padding: 10px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 10px;
+                    padding: 0 3px;
+                }
+                QLineEdit, QTextEdit, QComboBox, QSpinBox, QDateEdit, QTimeEdit {
+                    background-color: white;
+                    color: #333333;
+                    border: 1px solid #dddddd;
+                    padding: 5px;
+                    border-radius: 3px;
+                }
+                QPushButton {
+                    background-color: #0078d4;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #1084d9;
+                }
+                QPushButton:disabled {
+                    background-color: #cccccc;
+                }
+                QListWidget {
+                    background-color: white;
+                    border: 1px solid #dddddd;
+                    border-radius: 4px;
+                }
+                QListWidget::item:selected {
+                    background-color: #0078d4;
+                    color: white;
+                }
+                QTabWidget::pane {
+                    border: 1px solid #dddddd;
+                }
+                QTabBar::tab {
+                    background-color: #f5f5f5;
+                    padding: 8px 16px;
+                    border: 1px solid #dddddd;
+                }
+                QTabBar::tab:selected {
+                    background-color: #0078d4;
+                    color: white;
+                }
+            """)
+            # Aplica estilo claro ao calendário
+            self.calendar_widget.setStyleSheet(CALENDAR_STYLE_LIGHT)
+
+    def init_database(self):
+        """Inicializa o banco de dados"""
+        try:
+            self.db = EstudosDB()
+            print("Banco de dados inicializado com sucesso")
+        except Exception as e:
+            print(f"Erro ao inicializar banco de dados: {e}")
+            QMessageBox.critical(self, "Erro", 
+                f"Erro ao inicializar banco de dados: {str(e)}")
+            sys.exit(1)
+
+    def init_google_calendar(self):
+        """Inicializa o serviço do Google Calendar"""
+        try:
+            self.service = get_google_calendar_service()
+            print("Serviço do Google Calendar inicializado com sucesso")
+        except Exception as e:
+            print(f"Erro ao conectar com Google Calendar: {e}")
+            QMessageBox.warning(self, "Aviso", 
+                "Não foi possível conectar ao Google Calendar.\nAlgumas funcionalidades podem estar indisponíveis.")
+
+    def setup_window_style(self):
+        """Configura o estilo da janela"""
+        # Título da janela com emoji como ícone
+        self.setWindowTitle("📅 Agenda de Estudos")
+        
+        # Estilo da barra de título
+        if self.is_dark_mode:
+            self.setStyleSheet("""
+                QMainWindow {
+                    background-color: #1e1e1e;
+                }
+                QMenuBar {
+                    background-color: #2d2d2d;
+                    color: white;
+                }
+                QMenuBar::item:selected {
+                    background-color: #3d3d3d;
+                }
+                QStatusBar {
+                    background-color: #2d2d2d;
+                    color: white;
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                QMainWindow {
+                    background-color: #ffffff;
+                }
+                QMenuBar {
+                    background-color: #f0f0f0;
+                    color: #333333;
+                }
+                QMenuBar::item:selected {
+                    background-color: #e0e0e0;
+                }
+                QStatusBar {
+                    background-color: #f0f0f0;
+                    color: #333333;
+                }
+            """)
+
+    def create_right_panel(self):
+        """Cria o painel direito com o formulário de eventos"""
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(15, 15, 15, 15)
+        
+        # Grupo do formulário
+        form_group = QGroupBox("📝 Novo Evento")
+        form_layout = QFormLayout(form_group)
+        
+        # Campos do formulário
+        self.titulo = QLineEdit()
+        self.materia = QComboBox()
+        self.materia.addItems(self.db.get_materias())
+        self.data = QDateEdit()
+        self.data.setDate(QDate.currentDate())
+        self.hora_inicio = QTimeEdit()
+        self.hora_inicio.setTime(QTime.currentTime())
+        self.hora_fim = QTimeEdit()
+        self.hora_fim.setTime(QTime.currentTime().addSecs(3600))
+        self.descricao = QTextEdit()
+        self.descricao.setMaximumHeight(100)
+        
+        # Adiciona campos ao formulário
+        form_layout.addRow("Título:", self.titulo)
+        form_layout.addRow("Matéria:", self.materia)
+        form_layout.addRow("Data:", self.data)
+        form_layout.addRow("Hora Início:", self.hora_inicio)
+        form_layout.addRow("Hora Fim:", self.hora_fim)
+        form_layout.addRow("Descrição:", self.descricao)
+        
+        # Botões
+        btn_layout = QHBoxLayout()
+        
+        # Botão de gerenciar matérias
+        btn_materias = QPushButton("🎓 Gerenciar Matérias")
+        btn_materias.clicked.connect(self.show_gerenciar_materias)
+        btn_layout.addWidget(btn_materias)
+        
+        # Botão de adicionar evento
+        btn_adicionar = QPushButton("✅ Adicionar")
+        btn_adicionar.clicked.connect(self.adicionar_evento)
+        btn_layout.addWidget(btn_adicionar)
+        
+        # Adiciona os botões ao layout do formulário
+        form_layout.addRow("", btn_layout)
+        
+        # Adiciona o grupo do formulário ao painel
+        layout.addWidget(form_group)
+        
+        return panel
 
 class GerenciarMateriasDialog(QDialog):
     def __init__(self, db, parent=None):
@@ -1319,4 +1520,5 @@ def main():
 
 if __name__ == '__main__':
     print("Iniciando main")
+    main() 
     main() 
