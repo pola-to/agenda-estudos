@@ -1,0 +1,152 @@
+import sqlite3
+import pandas as pd
+from datetime import datetime, timedelta
+
+class EstudosDB:
+    def __init__(self):
+        self.conn = sqlite3.connect('estudos.db')
+        self.criar_tabelas()
+        self.migrar_materias()
+
+    def criar_tabelas(self):
+        cursor = self.conn.cursor()
+        
+        # Limpa a tabela de matérias existente (opcional, caso queira resetar)
+        cursor.execute('DROP TABLE IF EXISTS materias')
+        
+        # Cria a tabela de matérias vazia
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS materias (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT UNIQUE NOT NULL
+        )
+        ''')
+        
+        # Tabela de eventos
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS eventos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT NOT NULL,
+            materia TEXT NOT NULL,
+            data_inicio DATETIME NOT NULL,
+            data_fim DATETIME NOT NULL,
+            duracao_minutos INTEGER NOT NULL,
+            descricao TEXT
+        )
+        ''')
+        
+        self.conn.commit()
+
+    def adicionar_evento(self, titulo, materia, data_inicio, data_fim, descricao=""):
+        cursor = self.conn.cursor()
+        
+        # Calcula duração em minutos
+        inicio = datetime.fromisoformat(data_inicio.replace('Z', '+00:00'))
+        fim = datetime.fromisoformat(data_fim.replace('Z', '+00:00'))
+        duracao = (fim - inicio).total_seconds() / 60
+        
+        cursor.execute('''
+        INSERT INTO eventos (titulo, materia, data_inicio, data_fim, duracao_minutos, descricao)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''', (titulo, materia, data_inicio, data_fim, duracao, descricao))
+        
+        self.conn.commit()
+
+    def get_study_data(self, period_start=None, period_end=None):
+        """Retorna dados de estudo para análise"""
+        if period_start is None:
+            period_start = datetime.now() - timedelta(days=30)  # último mês por padrão
+        if period_end is None:
+            period_end = datetime.now()
+
+        query = """
+        SELECT 
+            date(data_inicio) as data,
+            time(data_inicio) as hora_inicio,
+            materia,
+            duracao_minutos
+        FROM eventos
+        WHERE data_inicio BETWEEN ? AND ?
+        """
+        
+        cursor = self.conn.cursor()
+        cursor.execute(query, (period_start.isoformat(), period_end.isoformat()))
+        
+        columns = ['data', 'hora_inicio', 'materia', 'duracao_minutos']
+        return pd.DataFrame(cursor.fetchall(), columns=columns)
+
+    def get_materias(self):
+        """Retorna todas as matérias salvas"""
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT nome FROM materias ORDER BY nome")
+        return [row[0] for row in cursor.fetchall()]
+
+    def add_materia(self, nome):
+        """Adiciona uma nova matéria ao banco de dados"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("INSERT INTO materias (nome) VALUES (?)", (nome.strip(),))
+            self.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+    def remove_materia(self, nome):
+        """Remove uma matéria do banco de dados"""
+        cursor = self.conn.cursor()
+        cursor.execute("DELETE FROM materias WHERE nome = ?", (nome,))
+        self.conn.commit()
+
+    def __del__(self):
+        """Fecha a conexão quando o objeto é destruído"""
+        self.conn.close()
+
+    def get_filtered_data(self):
+        """Obtém dados filtrados baseado no período selecionado"""
+        period = self.period_type.currentText()
+        
+        # Define o período
+        end_date = datetime.now()
+        if period == "Última Semana":
+            start_date = end_date - timedelta(days=7)
+        elif period == "Último Mês":
+            start_date = end_date - timedelta(days=30)
+        elif period == "Último Trimestre":
+            start_date = end_date - timedelta(days=90)
+        elif period == "Último Ano":
+            start_date = end_date - timedelta(days=365)
+        else:  # Todo o Período
+            start_date = datetime(2000, 1, 1)  # Data bem antiga
+
+        # Obtém os dados do banco
+        return self.get_study_data(start_date, end_date)
+
+    def migrar_materias(self):
+        """Migra as matérias existentes para a nova tabela"""
+        cursor = self.conn.cursor()
+        
+        # Verifica se a tabela materias existe
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='materias'
+        """)
+        
+        if not cursor.fetchone():
+            # Pega matérias únicas da tabela eventos
+            cursor.execute("SELECT DISTINCT materia FROM eventos")
+            materias_existentes = cursor.fetchall()
+            
+            # Cria nova tabela
+            cursor.execute('''
+            CREATE TABLE materias (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT UNIQUE NOT NULL
+            )
+            ''')
+            
+            # Insere matérias existentes
+            for materia in materias_existentes:
+                cursor.execute("INSERT OR IGNORE INTO materias (nome) VALUES (?)", 
+                             (materia[0],))
+        
+        self.conn.commit()

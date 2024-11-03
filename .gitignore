@@ -1,0 +1,21 @@
+# Credentials
+credentials.json
+token.pickle
+*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.class
+
+# Virtual Environment
+venv/
+env/
+
+# Database
+*.db
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
